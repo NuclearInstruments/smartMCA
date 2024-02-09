@@ -1,6 +1,7 @@
 import json
 import requests
 
+
 from enum import Enum
 
 
@@ -701,24 +702,30 @@ class StatisticsMCA:
     @property
     def result(self):
         return self._result
+    
+
+
+class OscilloscopeChannel:
+    def __init__(self, analog, digital):
+        self.analog = analog
+        self.digital = digital
 
 class OscilloscopeData:
     def __init__(self, wave):  
-        self.channels = []      
+        self._channels = [] 
+
         for w in wave:
-            analog = w["analog"]
-            digital = w["digital"]
-            analog = analog
-            digital = [[int(value) for value in sub_array] for sub_array in digital]
-            ch = {
-                analog: self.analog,
-                digital: self.digital,
-            }
-            self.channels.append(ch)
+            analog = w["analog"][0]
+            digitals = w["digital"]
+            digital = [[int(value) for value in sub_array] for sub_array in digitals]
+
+            channel = OscilloscopeChannel(analog, digital)
+            self.channels.append(channel)
     
     @property
     def channels(self):
-        return self.channels
+        return self._channels
+    
 
 
 class SmartMCA:
@@ -933,11 +940,11 @@ class SmartMCA:
         return j["data"], j["events"]
     
 
-    def oscilloscope_get_data(self, enable_trace_0 : bool = True, enable_trace_1 : bool = True ):
+    def oscilloscope_get_data(self, enable_trace_signal : bool = True, enable_trace_processing : bool = True ):
         waves = []
-        if enable_trace_0:
+        if enable_trace_signal:
             waves.append(0)
-        if enable_trace_1:
+        if enable_trace_processing:
             waves.append(1)
         param = {
             "waves": waves,

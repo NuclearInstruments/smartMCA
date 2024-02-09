@@ -26,8 +26,8 @@ print(config_io)
 
 mca.reset_statistics()
 
-y= mca.oscilloscope_get_data()
-plt.plot(y[0]["analog"])
+y= mca.oscilloscope_get_data(enable_trace_processing=False)
+plt.plot(y.channels[0].analog)
 plt.show()
 
 mca.spectrum_start()

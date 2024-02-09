@@ -43,7 +43,7 @@ class ConfigMCA:
         SIMPLE_PUR = "simple_pur"
         ADVANCED_PUR = "advanced_pur"
         
-    def __init__(self, config):
+    def __init__(self):
         self.baseline_hold = 10
         self.baseline_len = 10
         self.baseline_mode =  ConfigMCA.BaselineMode.BASELINE_SHAPER
@@ -61,7 +61,7 @@ class ConfigMCA:
         self.peak_pileup = 0
         self.peak_sampling = 0
         self.qdc_post_inibit = 100
-        self.qdc_pre = config["qdc_pre"]
+        self.qdc_pre = 1
         self.qdc_qlong = 100
         self.qdc_qshort = 20
         self.risetime_pre = 0
@@ -441,33 +441,63 @@ class ConfigMCA:
         self._trigger_type = value
 
 
-class Polarity(Enum):
-    POSITIVE = "positive"
-    NEGATIVE = "negative"
-
-class AnalogOut(Enum):
-    ENERGY_FILTER_OUTPUT = "energy_filter_output"
-    # Assumo altri valori possibili qui, aggiungili secondo necessità
-
-class DigitalIn(Enum):
-    EXTERNAL_TRIGGER = "external_trigger"
-    # Assumo altri valori possibili qui, aggiungili secondo necessità
-
-class DigitalOut(Enum):
-    TRIGGER = "trigger"
-    # Assumo altri valori possibili qui, aggiungili secondo necessità
-
 # Classe per la conversione e gestione dei valori
 class ConfigIO:
-    def __init__(self, config):
-        self.analog_in_polarity = config.get("analog_in_polarity", Polarity.POSITIVE.value)
-        self.analog_out = config.get("analog_out", AnalogOut.ENERGY_FILTER_OUTPUT.value)
-        self.digital_in = config.get("digital_in", DigitalIn.EXTERNAL_TRIGGER.value)
-        self.digital_out = config.get("digital_out", DigitalOut.TRIGGER.value)
+
+    class Polarity(Enum):
+        POSITIVE = "positive"
+        NEGATIVE = "negative"
+
+    class AnalogOut(Enum):
+        TRIGGER_OUTPUT = "trigger_output"
+        ENERGY_FILTER_OUTPUT = "energy_filter_output"
+        BASELINE = "baseline"
+        ENERGY_VALUE = "energy_value"
+        RISETIME = "risetime"
+        ANALOG_INPUT = "analog_input"
+
+        # Assumo altri valori possibili qui, aggiungili secondo necessità
+
+    class DigitalIn(Enum):
+        EXTERNAL_TRIGGER = "external_trigger"
+        EXTERNAL_RUN = "external_run"
+        EXTERNAL_RESET = "external_reset"
+        EXTERNAL_CLOCK = "external_clock"
+
+        # Assumo altri valori possibili qui, aggiungili secondo necessità
+
+    class DigitalOut(Enum):
+        TRIGGER = "trigger"
+        ENERGY_VALID = "energy_valid"
+        RISETIME_VALID = "risetime_valid"
+        RUN = "run"
+        
+        # Assumo altri valori possibili qui, aggiungili secondo necessità
+
+
+    def __init__(self):
+        self.analog_in_polarity = ConfigIO.Polarity.POSITIVE
+        self.analog_out = ConfigIO.AnalogOut.ENERGY_FILTER_OUTPUT
+        self.digital_in = ConfigIO.DigitalIn.EXTERNAL_TRIGGER
+        self.digital_out = ConfigIO.DigitalOut.TRIGGER
         
     def __str__(self):
         properties = vars(self)
         return '\n'.join([f'{key}: {value}' for key, value in properties.items() if key.startswith('_')])
+    
+    def process_config_json(self, config):
+        self.analog_in_polarity = convert_to_enum(config["analog_in_polarity"], ConfigIO.Polarity)
+        self.analog_out = convert_to_enum(config["analog_out"], ConfigIO.AnalogOut)
+        self.digital_in = convert_to_enum(config["digital_in"], ConfigIO.DigitalIn)
+        self.digital_out = convert_to_enum(config["digital_out"], ConfigIO.DigitalOut)
+    
+    def to_json(self):
+        return {
+            "analog_in_polarity": self.analog_in_polarity,
+            "analog_out": self.analog_out,
+            "digital_in": self.digital_in,
+            "digital_out": self.digital_out
+        }
     
     @property
     def analog_in_polarity(self):
@@ -475,7 +505,7 @@ class ConfigIO:
 
     @analog_in_polarity.setter
     def analog_in_polarity(self, value):
-        self._analog_in_polarity = convert_to_enum(value, Polarity)
+        self._analog_in_polarity = value
 
     @property
     def analog_out(self):
@@ -483,7 +513,7 @@ class ConfigIO:
 
     @analog_out.setter
     def analog_out(self, value):
-        self._analog_out = convert_to_enum(value, AnalogOut)
+        self._analog_out = value
 
     @property
     def digital_in(self):
@@ -491,7 +521,7 @@ class ConfigIO:
 
     @digital_in.setter
     def digital_in(self, value):
-        self._digital_in = convert_to_enum(value, DigitalIn)
+        self._digital_in = value
 
     @property
     def digital_out(self):
@@ -499,7 +529,196 @@ class ConfigIO:
 
     @digital_out.setter
     def digital_out(self, value):
-        self._digital_out = convert_to_enum(value, DigitalOut)
+        self._digital_out = value
+
+from enum import Enum
+
+class ConfigOscilloscope:
+    class ScopeAnalog(Enum):
+        TRAPEZOIDAL_BASELINE = "trapezoidal_baseline"
+        SIGNAL_BASELINE = "signal_baseline"
+        PEAK_STRETCHER_BASELINE = "peak_stretcher_baseline"
+        DELTA_TRIGGER = "delta_trigger"
+        TRAPEZOIDAL_TRIGGER = "trapezoidal_trigger"
+        TRAPEZOIDAL = "trapezoidal"
+        Q_LONG_VALUE = "q_long_value"
+        Q_SHORT_VALUE = "q_short_value"
+        PEAK_VALUE = "peak_value"
+        BASELINE = "baseline"
+        RISETIME = "risetime"
+
+    class TriggerSource(Enum):
+        FREE_RUNNING = "free_running"
+        ANALOG_CHANNEL_1 = "analog_channel_1"
+        ANALOG_CHANNEL_2 = "analog_channel_2"
+        EXTERNAL_TRIGGER = "external_trigger"
+        INTERNAL_TRIGGER = "internal_trigger"
+        ENERGY_VALID = "energy_valid"
+        EXTERNAL_RUN = "external_run"
+
+    def __init__(self):
+        self.decimator = None
+        self.pre_trigger = None
+        self.scope_analog = None
+        self.trigger_edge = None
+        self.trigger_level = None
+        self.trigger_source = None
+        
+    def __str__(self):
+        properties = vars(self)
+        return '\n'.join([f'{key}: {value}' for key, value in properties.items()])
+
+    def process_config_json(self, config):
+        self.decimator = config["decimator"]
+        self.pre_trigger = config["pre_trigger"]
+        self.scope_analog = convert_to_enum(config["scope_analog"], ConfigOscilloscope.ScopeAnalog)
+        self.trigger_edge = convert_to_enum(config["trigger_edge"], ConfigIO.Polarity)
+        self.trigger_level = config["trigger_level"]
+        self.trigger_source = convert_to_enum(config["trigger_source"], ConfigOscilloscope.TriggerSource)
+
+    def to_json(self):
+        return {
+            "decimator": self.decimator,
+            "pre_trigger": self.pre_trigger,
+            "scope_analog": self.scope_analog.value,
+            "trigger_edge": self.trigger_edge.value,
+            "trigger_level": self.trigger_level,
+            "trigger_source": self.trigger_source.value
+        }
+    
+    @property
+    def decimator(self):
+        return self._decimator
+    
+    @decimator.setter
+    def decimator(self, value):
+        self._decimator = value
+    
+    @property
+    def pre_trigger(self):
+        return self._pre_trigger
+    
+    @pre_trigger.setter
+    def pre_trigger(self, value):
+        self._pre_trigger = value
+    
+    @property
+    def scope_analog(self):
+        return self._scope_analog
+    
+    @scope_analog.setter
+    def scope_analog(self, value):
+        self._scope_analog = value
+    
+    @property
+    def trigger_edge(self):
+        return self._trigger_edge
+    
+    @trigger_edge.setter
+    def trigger_edge(self, value):
+        self._trigger_edge = value
+    
+    @property
+    def trigger_level(self):
+        return self._trigger_level
+    
+    @trigger_level.setter
+    def trigger_level(self, value):
+        self._trigger_level = value
+    
+    @property
+    def trigger_source(self):
+        return self._trigger_source
+    
+    @trigger_source.setter
+    def trigger_source(self, value):
+        self._trigger_source = value
+
+class StatisticsMCA:
+    class DataItem:
+        def __init__(self, name, value, min_value=None, max_value=None):
+            self._name = name
+            self._value = value
+            self._min_value = min_value
+            self._max_value = max_value
+        
+        @property
+        def name(self):
+            return self._name
+        
+        @property
+        def value(self):
+            return self._value
+        
+        @property
+        def min_value(self):
+            return self._min_value
+        
+        @property
+        def max_value(self):
+            return self._max_value
+
+    def __init__(self):
+        self._data = []
+        self._result = None
+        
+        # Definizione manuale delle proprietà per gli elementi dei dati
+        self.icr = self._get_data_item_by_name("ICR (Hz)")
+        self.ocr = self._get_data_item_by_name("OCR (Hz)")
+        self.input_count = self._get_data_item_by_name("INPUT COUNT")
+        self.output_count = self._get_data_item_by_name("OUTPUT COUNT")
+        self.dead_percent = self._get_data_item_by_name("DEAD (%)")
+        self.lost_count = self._get_data_item_by_name("LOST COUNT")
+        self.live_time_s = self._get_data_item_by_name("LIVE TIME (s)")
+
+    def _get_data_item_by_name(self, name):
+        for item in self._data:
+            if item.name == name:
+                return item
+        return None
+
+    def __str__(self):
+        data_str = '\n'.join([f'{item.name}: {item.value}' for item in self._data])
+        return f"Data:\n{data_str}\n"
+
+    def process_json(self, json_data):
+        for item in json_data["data"]:
+            if "min_value" in item and "max_value" in item:
+                data_item = self.DataItem(item["name"], item["value"], item["min_value"], item["max_value"])
+            else:
+                data_item = self.DataItem(item["name"], item["value"])
+            self._data.append(data_item)
+        self._result = json_data["result"]
+
+        self.icr = self._get_data_item_by_name("ICR (Hz)")
+        self.ocr = self._get_data_item_by_name("OCR (Hz)")
+        self.input_count = self._get_data_item_by_name("INPUT COUNT")
+        self.output_count = self._get_data_item_by_name("OUTPUT COUNT")
+        self.dead_percent = self._get_data_item_by_name("DEAD (%)")
+        self.lost_count = self._get_data_item_by_name("LOST COUNT")
+        self.live_time_s = self._get_data_item_by_name("LIVE TIME (s)")        
+
+    @property
+    def result(self):
+        return self._result
+
+class OscilloscopeData:
+    def __init__(self, wave):  
+        self.channels = []      
+        for w in wave:
+            analog = w["analog"]
+            digital = w["digital"]
+            analog = analog
+            digital = [[int(value) for value in sub_array] for sub_array in digital]
+            ch = {
+                analog: self.analog,
+                digital: self.digital,
+            }
+            self.channels.append(ch)
+    
+    @property
+    def channels(self):
+        return self.channels
 
 
 class SmartMCA:
@@ -507,6 +726,15 @@ class SmartMCA:
     connected = False  
     cookie = None
     _API_PATH_ = "/mca/api"
+
+    class Status(Enum):
+        IDLE = "idle"
+        RUNNING = "running"
+
+    class ScaleMode (Enum):
+        LINEAR = "linear"
+        LOG = "log"
+
     def __init__(self) -> None:
         url = ""
         
@@ -542,8 +770,7 @@ class SmartMCA:
             raise Exception("Not connected to the server", 1)
         response = requests.get(self.url + url, cookies=self.cookie)
         if response.status_code != 200:
-            raise Exception("Error in getting server status", 2)
-        
+            raise Exception("Error in getting server status", 2)        
         j = response.json()
         
         return j
@@ -563,24 +790,158 @@ class SmartMCA:
         
     def get_mca_configuration(self):
         j = self.http_get(self._API_PATH_ + "/HLL/hl_get_processing_param")
-        config = ConfigMCA(j)
+        config = ConfigMCA()
         config.process_config_json(j)
         return config
     
-    def set_mca_configuration(self, config):
+    def set_mca_configuration(self, config : ConfigMCA):
         j = config.to_json()
         r = self.http_post(self._API_PATH_ + "/HLL/hl_set_processing_param", j)
         if r["result"] != "ok":
             raise Exception(r["error"], 3)
     
     def get_io_configuration(self):
-        j = self.http_get(self._API_PATH_ + "/HLL/hl_get_processing_param")
-        config = ConfigIO(j)
+        j = self.http_get(self._API_PATH_ + "/HLL/hl_get_signal_param")
+        config = ConfigIO()
         config.process_config_json(j)
         return config
     
-    def set_io_configuration(self, config):
+    def set_io_configuration(self, config : ConfigIO):
         j = config.to_json()
-        r = self.http_post(self._API_PATH_ + "/HLL/hl_set_processing_param", j)
+        r = self.http_post(self._API_PATH_ + "/HLL/hl_set_signal_param", j)
         if r["result"] != "ok":
             raise Exception(r["error"], 3)
+        
+    def get_oscilloscope_configuration(self):
+        j = self.http_get(self._API_PATH_ + "/HLL/hl_get_scope_param")
+        config = ConfigOscilloscope()
+        config.process_config_json(j)
+        return config
+    
+    def set_oscilloscope_configuration(self, config : ConfigOscilloscope):
+        j = config.to_json()
+        r = self.http_post(self._API_PATH_ + "/HLL/hl_set_scope_param", j)
+        if r["result"] != "ok":
+            raise Exception(r["error"], 3)
+
+    def get_mca_statistics(self):
+        j = self.http_get(self._API_PATH_ + "/HLL/hl_get_statistics")
+        stats = StatisticsMCA()
+        stats.process_json(j)
+        return stats
+
+    def reset_statistics(self):
+        r = self.http_get(self._API_PATH_ + "/HLL/hl_reset_statistics")
+        if r["result"] != "ok":
+            raise Exception(r["error"], 3)
+        
+    def spectrum_get_status(self):
+        param = {
+            "histo_type" : "energy"
+        }
+        j = self.http_post(self._API_PATH_ + "/HLL/hl_get_status_histo", param)
+        if j["result"] == "running":
+            return SmartMCA.Status.RUNNING
+        else:
+            return SmartMCA.Status.IDLE
+        
+    def psd_get_status(self):
+        param = {
+            "histo_type" : "energy_psd"
+        }
+        j = self.http_post(self._API_PATH_ + "/HLL/hl_get_status_histo", param)
+        if j["result"] == "running":
+            return SmartMCA.Status.RUNNING
+        else:
+            return SmartMCA.Status.IDLE        
+        
+    def spectrum_start(self):
+        param = {
+            "histo_type" : "energy"
+        }
+        j = self.http_post(self._API_PATH_ + "/HLL/hl_start_histo", param)
+
+        
+    def psd_start(self):
+        param = {
+            "histo_type" : "energy_psd"
+        }
+        j = self.http_post(self._API_PATH_ + "/HLL/hl_start_histo", param)
+             
+        
+    def spectrum_stop(self):
+        param = {
+            "histo_type" : "energy"
+        }
+        j = self.http_post(self._API_PATH_ + "/HLL/hl_stop_histo", param)
+
+        
+    def psd_stop(self):
+        param = {
+            "histo_type" : "energy_psd"
+        }
+        j = self.http_post(self._API_PATH_ + "/HLL/hl_stop_histo", param)
+       
+        
+    def spectrum_reset(self):
+        param = {
+            "histo_type" : "energy"
+        }
+        j = self.http_post(self._API_PATH_ + "/HLL/hl_reset_histo", param)
+        
+        
+    def psd_reset(self):
+        param = {
+            "histo_type" : "energy_psd"
+        }
+        j = self.http_post(self._API_PATH_ + "/HLL/hl_reset_histo", param)
+
+    def spectrum_get(self, yscale:ScaleMode = ScaleMode.LINEAR, fit_data:bool=False, rebin:int=None):
+        if yscale.value == "log":
+            islog = True
+        else:
+            islog = False
+            
+        param = {
+            "histo_type": "energy",
+            "log": islog,
+            "fit": fit_data
+        }
+        
+        if rebin is not None:
+            param["histo_rebin"] = rebin
+        
+        j = self.http_post(self._API_PATH_ + "/HLL/hl_get_histo", param)
+        return j["data"], j["events"]
+    
+    def psd_get(self, yscale:ScaleMode = ScaleMode.LINEAR, fit_data:bool=False, rebin:int=None):
+        if yscale.value == "log":
+            islog = True
+        else:
+            islog = False
+            
+        param = {
+            "histo_type": "energy_psd",
+            "log": islog,
+            "fit": fit_data
+        }
+        
+        if rebin is not None:
+            param["histo_rebin"] = rebin
+        
+        j = self.http_post(self._API_PATH_ + "/HLL/hl_get_histo", param)
+        return j["data"], j["events"]
+    
+
+    def oscilloscope_get_data(self, enable_trace_0 : bool = True, enable_trace_1 : bool = True ):
+        waves = []
+        if enable_trace_0:
+            waves.append(0)
+        if enable_trace_1:
+            waves.append(1)
+        param = {
+            "waves": waves,
+        }
+        j = self.http_post(self._API_PATH_ + "/MMCComponents/Oscilloscope_0/get_waves_data",param)
+     
+        return OscilloscopeData(j["wave"])

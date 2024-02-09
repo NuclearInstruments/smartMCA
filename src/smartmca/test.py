@@ -1,17 +1,45 @@
 from smartmca import SmartMCA
-from smartmca import Config 
+from smartmca import ConfigMCA, ConfigIO
+
+from matplotlib import pyplot as plt
+
+import time
+
 mca = SmartMCA()
 
 mca.connect("http://192.168.102.120", "user", "password")
 mca.get_server_status()
-config = mca.get_processing_configuration()
+config = mca.get_mca_configuration()
 
 print(config)
 
 config.baseline_hold=2000
-config.trigger_mode = Config.TriggerMode.EXTERNAL
-mca.set_processing_configuration(config)
+config.trigger_mode = ConfigMCA.TriggerMode.INTERNAL
+mca.set_mca_configuration(config)
 
-config = mca.get_processing_configuration()
+config = mca.get_mca_configuration()
 
-print(config    )
+print(config)
+
+config_io = mca.get_io_configuration()
+print(config_io)
+
+mca.reset_statistics()
+
+y= mca.oscilloscope_get_data()
+plt.plot(y[0]["analog"])
+plt.show()
+
+mca.spectrum_start()
+
+time.sleep(5)
+
+stats = mca.get_mca_statistics()
+print(stats)
+
+x, counts = mca.spectrum_get(rebin=16)
+#plot x
+plt.plot(x)
+plt.show()
+
+print(counts)

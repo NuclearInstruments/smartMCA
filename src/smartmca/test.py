@@ -13,7 +13,7 @@ config = mca.get_mca_configuration()
 
 print(config)
 
-config.baseline_hold=2000
+config.baseline_hold=3000
 config.trigger_mode = ConfigMCA.TriggerMode.INTERNAL
 mca.set_mca_configuration(config)
 

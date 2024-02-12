@@ -8,7 +8,7 @@ version = "0.0.4"
 authors = [
   { name="Andrea Abba", email="abba@nuclearinstruments.eu" },
 ]
-description = "Smart MCA Python Library"
+description = "Smart MCA for DT5771 Python Library"
 readme = "README.md"
 requires-python = ">=3.5"
 classifiers = [
@@ -16,8 +16,9 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
-keywords = ["SciCompiler", "firmware", "fpga", "Nuclear Instruments", "CAEN"]
+keywords = ["MCA", "firmware", "fpga", "Nuclear Instruments", "CAEN"]
 dependencies = [
+  requests
 ]
 [project.urls]
 "Homepage" = "https://github.com/NuclearInstruments/libSmartMCA"

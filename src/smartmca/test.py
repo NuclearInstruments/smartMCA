@@ -30,14 +30,14 @@ y= mca.oscilloscope_get_data(enable_trace_processing=False)
 plt.plot(y.channels[0].analog)
 plt.show()
 
-mca.spectrum_start()
+mca.histogram_start()
 
 time.sleep(5)
 
 stats = mca.get_mca_statistics()
 print(stats)
 
-x, counts = mca.spectrum_get(rebin=16)
+x, counts = mca.histogram_get(rebin=16)
 #plot x
 plt.plot(x)
 plt.show()

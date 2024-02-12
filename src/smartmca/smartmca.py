@@ -14,7 +14,11 @@ def convert_to_enum(value, enum):
 
 # Classe per deserializzare i dati
 class ConfigMCA:
-        
+
+    class MCAMode(Enum):
+        HARDWARE = "hardware"
+        SOFTWARE = "software"
+
     # Definizione degli enum come specificato
     class TriggerMode(Enum):
         INTERNAL = "internal"
@@ -45,6 +49,7 @@ class ConfigMCA:
         ADVANCED_PUR = "advanced_pur"
         
     def __init__(self):
+        self.mca_mode = ConfigMCA.MCAMode.SOFTWARE
         self.baseline_hold = 10
         self.baseline_len = 10
         self.baseline_mode =  ConfigMCA.BaselineMode.BASELINE_SHAPER
@@ -82,6 +87,7 @@ class ConfigMCA:
         self.trigger_type = ConfigMCA.TriggerType.LEADING_EDGE
         
     def process_config_json(self, config):
+        self.mca_mode =  config["baseline_hold"]
         self.baseline_hold = config["baseline_hold"]
         self.baseline_len = config["baseline_len"]
         self.baseline_mode = convert_to_enum(config["baseline_mode"], ConfigMCA.BaselineMode)
@@ -120,6 +126,7 @@ class ConfigMCA:
 
     def to_json(self):
         return {
+            "mca_mode" : self.mca_mode,
             "baseline_hold": self.baseline_hold,
             "baseline_len": self.baseline_len,
             "baseline_mode": self.baseline_mode.value,
@@ -161,6 +168,13 @@ class ConfigMCA:
         properties = vars(self)
         return '\n'.join([f'{key}: {value}' for key, value in properties.items() if key.startswith('_')])
     
+    @property
+    def mca_mode(self):
+        return self._mca_mode
+    @mca_mode.setter
+    def mca_mode(self, value):
+        self._mca_mode = value
+
     @property
     def baseline_hold(self):
         return self._baseline_hold
@@ -557,6 +571,17 @@ class ConfigOscilloscope:
         ENERGY_VALID = "energy_valid"
         EXTERNAL_RUN = "external_run"
 
+    # class HISTROGRAM_SOURCE(Enum):
+    #     ENERGY = "energy",
+    #     RISETIME = "risetime",
+    #     TIME = "risetime"
+    
+    # class PSD_SOURCE(Enum):
+    #     ENERGY = "energy_",
+    #     PSD = "psd",
+    #     RISETIME = "risetime"
+
+
     def __init__(self):
         self.decimator = None
         self.pre_trigger = None
@@ -842,7 +867,7 @@ class SmartMCA:
         if r["result"] != "ok":
             raise Exception(r["error"], 3)
         
-    def spectrum_get_status(self):
+    def histogram_get_status(self):
         param = {
             "histo_type" : "energy"
         }
@@ -852,7 +877,7 @@ class SmartMCA:
         else:
             return SmartMCA.Status.IDLE
         
-    def psd_get_status(self):
+    def multiparametric_get_status(self):
         param = {
             "histo_type" : "energy_psd"
         }
@@ -862,48 +887,48 @@ class SmartMCA:
         else:
             return SmartMCA.Status.IDLE        
         
-    def spectrum_start(self):
+    def histogram_start(self):
         param = {
             "histo_type" : "energy"
         }
         j = self.http_post(self._API_PATH_ + "/HLL/hl_start_histo", param)
 
         
-    def psd_start(self):
+    def multiparametric_start(self):
         param = {
             "histo_type" : "energy_psd"
         }
         j = self.http_post(self._API_PATH_ + "/HLL/hl_start_histo", param)
              
         
-    def spectrum_stop(self):
+    def histogram_stop(self):
         param = {
             "histo_type" : "energy"
         }
         j = self.http_post(self._API_PATH_ + "/HLL/hl_stop_histo", param)
 
         
-    def psd_stop(self):
+    def multiparametric_stop(self):
         param = {
             "histo_type" : "energy_psd"
         }
         j = self.http_post(self._API_PATH_ + "/HLL/hl_stop_histo", param)
        
         
-    def spectrum_reset(self):
+    def histogram_reset(self):
         param = {
             "histo_type" : "energy"
         }
         j = self.http_post(self._API_PATH_ + "/HLL/hl_reset_histo", param)
         
         
-    def psd_reset(self):
+    def multiparametric_reset(self):
         param = {
             "histo_type" : "energy_psd"
         }
         j = self.http_post(self._API_PATH_ + "/HLL/hl_reset_histo", param)
 
-    def spectrum_get(self, yscale:ScaleMode = ScaleMode.LINEAR, fit_data:bool=False, rebin:int=None):
+    def histogram_get(self, yscale:ScaleMode = ScaleMode.LINEAR, fit_data:bool=False, rebin:int=None):
         if yscale.value == "log":
             islog = True
         else:
@@ -921,7 +946,7 @@ class SmartMCA:
         j = self.http_post(self._API_PATH_ + "/HLL/hl_get_histo", param)
         return j["data"], j["events"]
     
-    def psd_get(self, yscale:ScaleMode = ScaleMode.LINEAR, fit_data:bool=False, rebin:int=None):
+    def multiparametric_get(self, yscale:ScaleMode = ScaleMode.LINEAR, fit_data:bool=False, rebin:int=None):
         if yscale.value == "log":
             islog = True
         else:

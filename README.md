@@ -8,6 +8,13 @@ With the library it is possible to:
 - Start, stop reset 1D and 2D spectra
 - Dump waveforms
 
+## Installation
+
+This library can be installed using the command
+
+```bash
+pip install smartmca
+
 ## Code Example
 
 ```Python

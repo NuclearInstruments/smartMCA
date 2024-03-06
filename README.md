@@ -14,6 +14,7 @@ This library can be installed using the command
 
 ```bash
 pip install smartmca
+```
 
 ## Code Example
 
